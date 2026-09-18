@@ -27,5 +27,5 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "dps" # Имя вашего проекта в Deno Deploy
-          entrypoint: "backend/server.ts" # Явный путь к файлу из корня репозитория
+          entrypoint: "server.ts" # Явный путь к файлу из корня репозитория
           root: .
