@@ -1,0 +1,31 @@
+name: Deploy Backend to Deno Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**' # Запускать только при изменениях в папке backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Deploy to Deno Deploy
+        uses: denoland/deployctl@v1
+        with:
+          project: "dps" # Имя вашего проекта в Deno Deploy
+          entrypoint: "backend/server.ts" # Явный путь к файлу из корня репозитория
+          root: .
