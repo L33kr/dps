@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Warframe DPS Calculator v2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    color: #e8eaf6;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container { max-width: 1300px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  h1 {
+    font-size: 2rem;
+    background: linear-gradient(90deg, #4fc3f7, #b388ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .subtitle { color: #90a4ae; font-size: 0.9rem; }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 950px) { .layout { grid-template-columns: 1fr; } }
+  .panel {
+    background: rgba(255,255,255,0.04);
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .panel h2 {
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+    color: #4fc3f7;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel h2::before {
+    content: '';
+    width: 4px; height: 20px;
+    background: linear-gradient(180deg, #4fc3f7, #b388ff);
+    border-radius: 2px;
+  }
+  input, select, button {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.3);
+    color: #e8eaf6;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #4fc3f7;
+    box-shadow: 0 0 0 3px rgba(79,195,247,0.15);
+  }
+  select[multiple] {
+    padding: 6px;
+    height: 220px;
+    overflow-y: auto;
+  }
+  select[multiple] option { padding: 4px 8px; border-radius: 4px; }
+  select[multiple] option:checked {
+    background: linear-gradient(90deg, #4fc3f7, #b388ff);
+    color: white;
+  }
+  .weapon-info {
+    background: rgba(0,0,0,0.25);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #b0bec5;
+    margin-top: 8px;
+  }
+  .weapon-info span { color: #4fc3f7; font-weight: 600; }
+  .buffs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .buff {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+  }
+  .buff:hover { background: rgba(79,195,247,0.1); }
+  .buff input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
+  .result {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(79,195,247,0.1), rgba(179,136,255,0.1));
+    border: 1px solid rgba(79,195,247,0.3);
+    text-align: center;
+  }
+  .dps-value {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #4fc3f7, #b388ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 10px 0;
+    letter-spacing: -1px;
+  }
+  .dps-label { color: #90a4ae; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; }
+  .breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+    text-align: left;
+  }
+  .stat {
+    background: rgba(0,0,0,0.3);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+  }
+  .stat-label { color: #90a4ae; margin-bottom: 4px; }
+  .stat-value { color: #e8eaf6; font-weight: 600; font-size: 0.95rem; }
+  .stat.armor { border: 1px solid rgba(255,152,0,0.4); }
+  .stat.status { border: 1px solid rgba(156,39,176,0.4); }
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .slider-group input[type="range"] {
+    flex: 1;
+    margin: 0;
+    padding: 0;
+    height: 6px;
+    -webkit-appearance: none;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    border: none;
+  }
+  .slider-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4fc3f7, #b388ff);
+    cursor: pointer;
+  }
+  .slider-value {
+    min-width: 40px;
+    text-align: right;
+    font-weight: 600;
+    color: #4fc3f7;
+    font-size: 0.9rem;
+  }
+  .api-config {
+    position: fixed;
+    top: 10px; right: 10px;
+    background: rgba(0,0,0,0.6);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: #90a4ae;
+    z-index: 100;
+  }
+  .api-config input {
+    width: 250px;
+    padding: 4px 8px;
+    margin: 0;
+    font-size: 0.75rem;
+  }
+  .api-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  .api-status.ok { background: #4caf50; }
+  .api-status.err { background: #f44336; }
+</style>
+</head>
+<body>
+<div class="api-config">
+  <span class="api-status" id="apiStatus"></span>
+  <label>API: <input type="text" id="apiUrl" placeholder="https://ваш-проект.deno.dev"></label>
+</div>
+
+<div class="container">
+  <header>
+    <h1>🎮 Warframe DPS Calculator v2</h1>
+    <p class="subtitle">С учетом брони, уровня врагов и статусов</p>
+  </header>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Оружие</h2>
+      <input type="text" id="weaponSearch" placeholder="🔍 Поиск оружия...">
+      <select id="weaponSelect" size="10"></select>
+      <div class="weapon-info" id="weaponInfo">Выберите оружие</div>
+    </div>
+
+    <div class="panel">
+      <h2>Моды <span style="color:#90a4ae;font-size:0.8rem;font-weight:400">(Ctrl+клик)</span></h2>
+      <input type="text" id="modSearch" placeholder="🔍 Поиск модов...">
+      <select id="modSelect" multiple size="10"></select>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1;">
+      <h2>⚔️ Враг</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Тип брони</label>
+          <select id="enemyArmorType">
+            <option value="none">Без брони</option>
+            <option value="ferrite">Феррит (Grineer)</option>
+            <option value="alloy">Сплав (Heavy Grineer)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Тип здоровья</label>
+          <select id="enemyHealthType">
+            <option value="cloned_flesh">Cloned Flesh (Grineer)</option>
+            <option value="flesh">Flesh (Corpus)</option>
+            <option value="robotic">Robotic (Corpus Robots)</option>
+            <option value="infested">Infested</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Уровень врага: <span id="enemyLevelDisplay" style="color:#4fc3f7;font-weight:600;">100</span></label>
+          <input type="range" id="enemyLevel" min="1" max="9999" value="100" style="width:100%;padding:0;height:6px;">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Базовая броня врага: <span id="enemyBaseArmorDisplay" style="color:#4fc3f7;font-weight:600;">500</span></label>
+          <input type="range" id="enemyBaseArmor" min="0" max="2000" value="500" style="width:100%;padding:0;height:6px;">
+        </div>
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Базовый уровень: <span id="enemyBaseLevelDisplay" style="color:#4fc3f7;font-weight:600;">1</span></label>
+          <input type="range" id="enemyBaseLevel" min="1" max="100" value="1" style="width:100%;padding:0;height:6px;">
+        </div>
+      </div>
+      <div id="armorPreview" style="margin-top:10px;padding:10px;background:rgba(255,152,0,0.1);border-radius:8px;font-size:0.85rem;color:#ffb74d;display:none;"></div>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1;">
+      <h2>🔥 Статусы на враге</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Viral стаки (0-10)</label>
+          <div class="slider-group">
+            <input type="range" id="viralStacks" min="0" max="10" value="0">
+            <span class="slider-value" id="viralStacksValue">0</span>
+          </div>
+          <div style="font-size:0.75rem;color:#90a4ae;">Увеличивает урон по здоровью</div>
+        </div>
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Corrosive стаки (0-10)</label>
+          <div class="slider-group">
+            <input type="range" id="corrosiveStacks" min="0" max="10" value="0">
+            <span class="slider-value" id="corrosiveStacksValue">0</span>
+          </div>
+          <div style="font-size:0.75rem;color:#90a4ae;">Снижает броню врага</div>
+        </div>
+        <div>
+          <label style="font-size:0.85rem;color:#b0bec5;">Heat (сек, 0-6)</label>
+          <div class="slider-group">
+            <input type="range" id="heatSeconds" min="0" max="6" value="0" step="0.5">
+            <span class="slider-value" id="heatSecondsValue">0</span>
+          </div>
+          <div style="font-size:0.75rem;color:#90a4ae;">Постепенно снижает броню</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="grid-column: 1 / -1;">
+      <h2>Баффы</h2>
+      <div class="buffs">
+        <label class="buff"><input type="checkbox" id="buffRoar"> Рёв Райно (+50%)</label>
+        <label class="buff"><input type="checkbox" id="buffEclipse"> Затмение Мираж (+200%)</label>
+        <label class="buff"><input type="checkbox" id="buffShock"> Вспышка Вольта (+100%)</label>
+        <label class="buff"><input type="checkbox" id="buffHeadshot"> Хедшот (×2)</label>
+      </div>
+    </div>
+
+    <div class="panel result">
+      <div class="dps-label">Total DPS</div>
+      <div class="dps-value" id="dpsValue">—</div>
+      <div class="breakdown" id="breakdown"></div>
+    </div>
+  </div>
